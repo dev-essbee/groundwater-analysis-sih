@@ -1,3 +1,5 @@
 data/raw-files
 temp
 .ipynb_checkpoints
+.vscode
+.idea
