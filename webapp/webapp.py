@@ -205,7 +205,7 @@ def update_main_map(resolution_level, slider_value):
         mapbox_zoom=3,
         mapbox_center={"lat": 26.9124, "lon": 75.7873},
     )
-    fig_map.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0},transition_duration=500)
+    fig_map.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, transition_duration=500)
     return fig_map
 
 
