@@ -41,6 +41,10 @@ app.title = 'Analysis GroundWater India'
 
 # load data
 # todo: optimize loading data
+# def load_data():
+#     bucket_name
+#     folder_name
+
 with open(data + r'geojson/gadm36_IND_2_id.json', 'r') as f:
     districts_geojson = json.load(f)
 df_gw_dis_mont = pd.read_parquet(data + r'gw-district-monthly.parquet.gzip')
@@ -193,6 +197,8 @@ def update_main_map(resolution_level, slider_value):
             colorscale="Viridis",
             zmin=0,
             zmax=12,
+            marker_opacity=0.5,
+            marker_line_width=0,
         )
     )
     fig_map.update_layout(
@@ -206,6 +212,6 @@ def update_main_map(resolution_level, slider_value):
 
 # display
 
-
+# todo fix app.yaml with threads and processes
 if __name__ == "__main__":
     app.run_server(debug=True)
