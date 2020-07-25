@@ -1,12 +1,10 @@
+import json
 import dash
+import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
-import plotly.graph_objects as go
 import pandas as pd
-import numpy as np
-import pickle
-import json
-import dash_bootstrap_components as dbc
+import plotly.graph_objects as go
 from dash.dependencies import Input, Output
 
 # location variables
@@ -45,12 +43,11 @@ app.title = 'Analysis GroundWater India'
 # todo: optimize loading data
 with open(data + r'geojson/gadm36_IND_2_id.json', 'r') as f:
     districts_geojson = json.load(f)
-with open(data + r'groundwater-district-monthly.pickle', 'rb') as f:
-    df_gw_dis_mont = pickle.load(f)
+df_gw_dis_mont = pd.read_parquet(data + r'gw-district-monthly.parquet.gzip')
 with open(data + r'geojson/gadm36_IND_1_id.json', 'r') as f:
     states_geojson = json.load(f)
-with open(data + r'groundwater-state-monthly.pickle', 'rb') as f:
-    df_gw_state_mont = pickle.load(f)
+df_gw_state_mont = pd.read_parquet(data + r'gw-state-monthly.parquet.gzip')
+
 # components viz
 # main map
 
@@ -144,9 +141,9 @@ app.layout = html.Div(
     ],
     [Input('main-map', 'hoverData')]
 )
-def update_stats_callback(hoverData):
-    if hoverData:
-        val = hoverData['points'][0]
+def update_stats_callback(hover_data):
+    if hover_data:
+        val = hover_data['points'][0]
         return (
             ([
                 html.H4(val['z'], className='card-title'),
@@ -196,8 +193,6 @@ def update_main_map(resolution_level, slider_value):
             colorscale="Viridis",
             zmin=0,
             zmax=12,
-            marker_opacity=0.5,
-            marker_line_width=0,
         )
     )
     fig_map.update_layout(
