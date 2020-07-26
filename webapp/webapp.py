@@ -7,6 +7,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output
 import gcsfs
+
 # import os, sys
 # dir_path = os.path.dirname(os.path.realpath(__file__))
 # parent_dir_path = os.path.abspath(os.path.join(dir_path, os.pardir))
@@ -51,6 +52,18 @@ app.title = 'Analysis GroundWater India'
 #     bucket_name
 #     folder_name
 
+#     df_gw_pre_post = pd.read_parquet('gs://gnd-water-manage-sih.appspot.com/gw-block-pre-post.parquet.gzip')
+#     # print(df_gw_pre_post.head())
+#     fs=gcsfs.GCSFileSystem(project='gnd-water-manage-sih')
+#     bucket='gnd-water-manage-sih.appspot.com/'
+#     with fs.open(bucket + r'gadm36_IND_0_id.json') as f:
+#         india_geojson = json.load(f)
+#     with fs.open(bucket + r'gadm36_IND_1_id.json') as f:
+#         states_geojson = json.load(f)
+#     with fs.open(bucket + r'gadm36_IND_2_id.json') as f:
+#         districts_geojson = json.load(f)
+#     with fs.open(bucket + r'gadm36_IND_3_id.json') as f:
+#         blocks_geojson = json.load(f)
 df_gw_pre_post = pd.read_parquet(data + r'comp/gw-block-pre-post.parquet.gzip')
 with open(data + r'geojson/gadm36_IND_0_id.json', 'r') as f:
     india_geojson = json.load(f)
