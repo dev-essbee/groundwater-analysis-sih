@@ -6,7 +6,12 @@ import dash_html_components as html
 import pandas as pd
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output
-
+import gcsfs
+# import os, sys
+# dir_path = os.path.dirname(os.path.realpath(__file__))
+# parent_dir_path = os.path.abspath(os.path.join(dir_path, os.pardir))
+# sys.path.insert(0, parent_dir_path)
+# import data_import
 # location variables
 data = r"../data/"
 
@@ -38,8 +43,9 @@ app = dash.Dash(__name__, meta_tags=[
     }
 ], external_stylesheets=[dbc.themes.MATERIA])
 app.title = 'Analysis GroundWater India'
-
-# load data
+#######################################################################################################################
+################################################### load data #########################################################
+#######################################################################################################################
 # todo: optimize loading data
 # def load_data():
 #     bucket_name
@@ -63,17 +69,30 @@ YEARS_STATIONS = list(map(lambda year: year + "-stations", YEARS))
 YEARS_STATIONS.append("total-stations")
 
 
-# print(YEARS,YEARS_PRE,YEARS_POST,YEARS_STATION)
-# components viz
-def no_stations_graph(value):
+#######################################################################################################################
+############################################ visualizations ###########################################################
+#######################################################################################################################
+def trend_scatter_plot(df_gw):
+    fig = go.Figure(data=go.Scatter(x=YEARS, y=df_gw.values))
+    fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, transition_duration=500)
+    return fig
+
+
+def stations_bar_graph(stations_per):
+    fig_stations = go.Figure([go.Bar(x=YEARS, y=stations_per)])
+    fig_stations.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, transition_duration=500)
+    return fig_stations
+
+
+def no_stations_plot(value):
     print(value)
     used = value.split('/')
     total = int(used[1])
     used = int(used[0])
-    print(total,used,value)
+    # print(total, used, value)
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
-        value=int((used/total)*100),
+        value=int((used / total) * 100),
         domain={'x': [0, 1], 'y': [0, 1]},
         title={'text': "Stations Measured"},
         gauge={'axis': {'range': [None, 100]}}
@@ -82,10 +101,35 @@ def no_stations_graph(value):
     return fig
 
 
-# main map
+def main_map(geojson_file, loc, z_val, stations_info):
+    fig_map = go.Figure(
+        go.Choroplethmapbox(
+            geojson=geojson_file,
+            locations=loc,
+            z=z_val,
+            customdata=stations_info,
+            colorscale="Viridis",
+            zmin=0,
+            zmax=12,
+            marker_opacity=0.5,
+            marker_line_width=0,
+        )
+    )
+    fig_map.update_layout(
+        mapbox_style="carto-positron",
+        mapbox_zoom=3,
+        mapbox_center={"lat": 26.9124, "lon": 75.7873},
+    )
+    fig_map.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, transition_duration=500)
+    return fig_map
 
 
-# ui components
+#######################################################################################################################
+############################################ ui components ############################################################
+#######################################################################################################################
+
+######################################### primary components ##########################################################
+
 resolution_main_dropdown = dcc.Dropdown(
     id='resolution-main-map',
     options=[
@@ -127,6 +171,9 @@ navbar = dbc.NavbarSimple(
     color='primary',
     dark=True,
 )
+
+########################################## Secondary Components #######################################################
+
 main_map_card = dbc.Card(
     [
         dbc.CardHeader(
@@ -156,6 +203,13 @@ trend_graph_card = dbc.Card(
     )
 )
 
+trend_stations_card = dbc.Card(
+    [
+        html.H4("Stations Measured", className="card-title"),
+        dcc.Graph(id='trend-stations-graph')
+    ]
+)
+
 
 def main_details_card(type_v):
     return (dbc.Card(
@@ -165,8 +219,9 @@ def main_details_card(type_v):
     ))
 
 
-# ui main
-
+#######################################################################################################################
+########################################### main ui layout ############################################################
+#######################################################################################################################
 app.layout = html.Div(
     children=[
         dbc.Row(dbc.Col(navbar)),
@@ -174,7 +229,7 @@ app.layout = html.Div(
             [
                 dbc.Col(
                     main_map_card,
-                    width={"size": 10},
+                    width={"size": 9},
                 ),
                 dbc.Col(
                     [
@@ -182,7 +237,7 @@ app.layout = html.Div(
                         main_details_card('current-card'),
                         main_details_card('no-stations-card'),
 
-                    ], width={"size": 2}
+                    ], width={"size": 3}
                 )
             ]
         ),
@@ -190,8 +245,12 @@ app.layout = html.Div(
             [
                 dbc.Col(
                     trend_graph_card,
-                    width={"size": 10},
+                    width={"size": 6},
                 ),
+                dbc.Col(
+                    trend_stations_card,
+                    width={'size': 6},
+                )
             ]
         )
     ]
@@ -199,10 +258,17 @@ app.layout = html.Div(
 
 
 # computation functions
+#######################################################################################################################
+################################################# callbacks ###########################################################
+#######################################################################################################################
 
-# callbacks
+################################################# Main Trend Callback ##################################################
+
+
 @app.callback(
-    Output('trend-graph', 'figure'),
+    [Output('trend-graph', 'figure'),
+     Output('trend-stations-graph', 'figure')
+     ],
     [Input('resolution-main-map', 'value'),
      Input('main-map', 'clickData'),
      Input('time-main-map', 'value')]
@@ -230,14 +296,19 @@ def update_trend_callback(resolution, click_data, time):
             }
         ).round(2)
     )
-    df = df.loc['mean', temp_years]
+    df_gw = df.loc['mean', temp_years]
     # print(YEARS, df.values, df)
-    fig = go.Figure(data=go.Scatter(x=YEARS, y=df.values))
-    fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, transition_duration=500)
+
     # print(hover_value)
-    return fig
+    fig = trend_scatter_plot(df_gw)
+    df_stations = df.loc['sum', YEARS_STATIONS[:-1]]
+    stations_per = (df_stations / df.loc['sum', YEARS_STATIONS[-1]]) * 100
+    # print(stations_per)
+    fig_stations = stations_bar_graph(stations_per)
+    return fig, fig_stations
 
 
+############################################## Main Info Callback #####################################################
 @app.callback(
     [
         Output(component_id='region-card', component_property='children'),
@@ -258,7 +329,7 @@ def update_stats_callback(hover_data):
                 html.H4(val['location'], className='card-title'),
                 html.P('Location', className='card-text'),
             ]), ([
-                dcc.Graph(id='no-stations-graph', figure=no_stations_graph(val['customdata'])),
+                dcc.Graph(id='no-stations-graph', figure=no_stations_plot(val['customdata'])),
             ])
         )
     else:
@@ -270,7 +341,7 @@ def update_stats_callback(hover_data):
                 html.H4('stat', className='card-title'),
                 html.P('text', className='card-text'),
             ]), ([
-                dcc.Graph(id='no-stations-graph', figure=no_stations_graph('1/1')),
+                dcc.Graph(id='no-stations-graph', figure=no_stations_plot('1/1')),
             ])
         )
 
@@ -304,31 +375,13 @@ def update_main_map(resolution_level, slider_value, time_value):
         geojson_file = districts_geojson
     else:
         geojson_file = blocks_geojson
-
-    fig_map = go.Figure(
-        go.Choroplethmapbox(
-            geojson=geojson_file,
-            locations=loc,
-            z=z_val,
-            customdata=stations_info,
-            colorscale="Viridis",
-            zmin=0,
-            zmax=12,
-            marker_opacity=0.5,
-            marker_line_width=0,
-        )
-    )
-    fig_map.update_layout(
-        mapbox_style="carto-positron",
-        mapbox_zoom=3,
-        mapbox_center={"lat": 26.9124, "lon": 75.7873},
-    )
-    fig_map.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, transition_duration=500)
     # print(type(fig_map))
-    return fig_map
+    return main_map(geojson_file, loc, z_val, stations_info)
 
 
-# display
+#######################################################################################################################
+################################################ run ##################################################################
+#######################################################################################################################
 
 # todo fix app.yaml with threads and processes
 if __name__ == "__main__":
