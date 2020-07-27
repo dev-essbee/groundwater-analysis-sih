@@ -38,3 +38,8 @@ YEARS_PRE = list(map(lambda year: year + "-pre", YEARS))
 YEARS_POST = list(map(lambda year: year + "-post", YEARS))
 YEARS_STATIONS = list(map(lambda year: year + "-stations", YEARS))
 YEARS_STATIONS.append("total-stations")
+locations = ['india']
+locations.extend(list(set(list(df_gw_pre_post['state']))))
+locations.extend(list(set(list(df_gw_pre_post['district']))))
+locations.extend(list(set(list(df_gw_pre_post['block']))))
+locations = list(set(map(lambda x: x.title(), locations)))

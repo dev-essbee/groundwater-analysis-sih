@@ -7,7 +7,8 @@ from dash.dependencies import Input, Output
 import gcsfs
 from webapp import app
 from data_global_var import df_gw_pre_post, india_geojson, states_geojson, districts_geojson, blocks_geojson, \
-    NO_OF_YEARS, YEARS, YEARS_PRE, YEARS_POST, YEARS_STATIONS
+    NO_OF_YEARS, YEARS, YEARS_PRE, YEARS_POST, YEARS_STATIONS, locations
+
 
 # import os, sys
 # dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -15,7 +16,6 @@ from data_global_var import df_gw_pre_post, india_geojson, states_geojson, distr
 # sys.path.insert(0, parent_dir_path)
 # import data_import
 # location variables
-
 
 
 #######################################################################################################################
@@ -43,9 +43,12 @@ def no_stations_plot(value):
         mode="gauge+number",
         value=int((used / total) * 100),
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "Stations Measured"},
-        gauge={'axis': {'range': [None, 100]}}
-    ))
+        title={'text': "Stations Measured %"},
+        gauge={'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
+               'bar': {'color': "RebeccaPurple"},
+               'bgcolor': "white",
+               'borderwidth': 2,
+               'bordercolor': "gray"}))
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, transition_duration=500)
     return fig
 
@@ -57,17 +60,18 @@ def main_map(geojson_file, loc, z_val, stations_info):
             locations=loc,
             z=z_val,
             customdata=stations_info,
-            colorscale="Viridis",
+            colorscale="Bluered",
             zmin=0,
             zmax=12,
             marker_opacity=0.5,
             marker_line_width=0,
+            colorbar=dict(thickness=15, ticklen=3),
         )
     )
     fig_map.update_layout(
         mapbox_style="carto-positron",
-        mapbox_zoom=3,
-        mapbox_center={"lat": 26.9124, "lon": 75.7873},
+        mapbox_zoom=3.25,
+        mapbox_center={"lat": 22.775, "lon": 75.8577},
     )
     fig_map.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, transition_duration=500)
     return fig_map
@@ -109,7 +113,7 @@ main_map_slider = dcc.Slider(
 navbar = dbc.NavbarSimple(
     children=[
         dbc.NavItem(
-            dbc.NavLink('Something', href="#")
+            dbc.NavLink('Time Series Analysis', href="/time-series")
         ),
         dbc.NavItem(
             dbc.NavLink('Something', href="#")
@@ -121,6 +125,19 @@ navbar = dbc.NavbarSimple(
     dark=True,
 )
 
+
+def get_search_datalist_option(locs):
+    options = []
+    for loc in locs:
+        options.append(html.Option(value=loc))
+    print(options[:5])
+    return options
+
+
+search_bar = [html.Datalist(id='search-bar-datalist', children=get_search_datalist_option(locations)),
+              dbc.Input(id='search-bar', placeholder='Type to search a place', type='search', autoComplete=True,
+                        list='search-bar-datalist')]
+
 ########################################## Secondary Components #######################################################
 
 main_map_card = dbc.Card(
@@ -129,7 +146,9 @@ main_map_card = dbc.Card(
             dbc.Row(
                 [
                     dbc.Col(resolution_main_dropdown),
-                    dbc.Col(time_main_dropdown)
+                    dbc.Col(time_main_dropdown),
+                    dbc.Col(search_bar)
+
                 ]
             )
         ),
@@ -211,53 +230,7 @@ layout = html.Div(
 ################################################# callbacks ###########################################################
 #######################################################################################################################
 
-################################################# Main Trend Callback ##################################################
-
-
-@app.callback(
-    [Output('trend-graph', 'figure'),
-     Output('trend-stations-graph', 'figure')
-     ],
-    [Input('resolution-main-map', 'value'),
-     Input('main-map', 'clickData'),
-     Input('time-main-map', 'value')]
-)
-def update_trend_callback(resolution, click_data, time):
-    hover_value = 'india'
-    if not click_data:
-        if resolution == 'state':
-            hover_value = 'rajasthan'
-        elif resolution == 'district':
-            hover_value = 'jaipur'
-        elif resolution == 'block':
-            hover_value = 'amber'
-    else:
-        hover_value = click_data['points'][0]['location']
-    if time == 'pre':
-        temp_years = YEARS_PRE
-    else:
-        temp_years = YEARS_POST
-    df = (
-        df_gw_pre_post.iloc[list(df_gw_pre_post[df_gw_pre_post[resolution] == hover_value].index)].agg(
-            {
-                **{i: ["mean"] for i in temp_years},
-                **{i: ["sum"] for i in YEARS_STATIONS},
-            }
-        ).round(2)
-    )
-    df_gw = df.loc['mean', temp_years]
-    # print(YEARS, df.values, df)
-
-    # print(hover_value)
-    fig = trend_scatter_plot(df_gw)
-    df_stations = df.loc['sum', YEARS_STATIONS[:-1]]
-    stations_per = (df_stations / df.loc['sum', YEARS_STATIONS[-1]]) * 100
-    # print(stations_per)
-    fig_stations = stations_bar_graph(stations_per)
-    return fig, fig_stations
-
-
-############################################## Main Info Callback #####################################################
+############################################### search bar callback ###################################################
 @app.callback(
     [
         Output(component_id='region-card', component_property='children'),
@@ -326,5 +299,47 @@ def update_main_map(resolution_level, slider_value, time_value):
         geojson_file = blocks_geojson
     # print(type(fig_map))
     return main_map(geojson_file, loc, z_val, stations_info)
+
+@app.callback(
+    [Output('trend-graph', 'figure'),
+     Output('trend-stations-graph', 'figure')
+     ],
+    [Input('resolution-main-map', 'value'),
+     Input('main-map', 'clickData'),
+     Input('time-main-map', 'value')]
+)
+def update_trend_callback(resolution, click_data, time):
+    hover_value = 'india'
+    if not click_data:
+        if resolution == 'state':
+            hover_value = 'rajasthan'
+        elif resolution == 'district':
+            hover_value = 'jaipur'
+        elif resolution == 'block':
+            hover_value = 'amber'
+    else:
+        hover_value = click_data['points'][0]['location']
+    if time == 'pre':
+        temp_years = YEARS_PRE
+    else:
+        temp_years = YEARS_POST
+    df = (
+        df_gw_pre_post.iloc[list(df_gw_pre_post[df_gw_pre_post[resolution] == hover_value].index)].agg(
+            {
+                **{i: ["mean"] for i in temp_years},
+                **{i: ["sum"] for i in YEARS_STATIONS},
+            }
+        ).round(2)
+    )
+    df_gw = df.loc['mean', temp_years]
+    # print(YEARS, df.values, df)
+
+    # print(hover_value)
+    fig = trend_scatter_plot(df_gw)
+    df_stations = df.loc['sum', YEARS_STATIONS[:-1]]
+    stations_per = (df_stations / df.loc['sum', YEARS_STATIONS[-1]]) * 100
+    # print(stations_per)
+    fig_stations = stations_bar_graph(stations_per)
+    return fig, fig_stations
 
 # todo fix app.yaml with threads and processes
