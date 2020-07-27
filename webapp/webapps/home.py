@@ -34,18 +34,13 @@ def stations_bar_graph(stations_per):
     return fig_stations
 
 
-def no_stations_plot(value):
-    # print(value)
-    used = value.split('/')
-    total = int(used[1])
-    used = int(used[0])
-    # print(total, used, value)
+def years_measured_plot(value):
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
-        value=int((used / total) * 100),
+        value=int(value),
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "Stations Measured %"},
-        gauge={'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
+        title={'text': "Years Measured"},
+        gauge={'axis': {'range': [None, NO_OF_YEARS], 'tickwidth': 1, 'tickcolor': "darkblue"},
                'bar': {'color': "RebeccaPurple"},
                'bgcolor': "white",
                'borderwidth': 2,
@@ -54,13 +49,13 @@ def no_stations_plot(value):
     return fig
 
 
-def main_map(geojson_file, loc, z_val, stations_info):
+def main_map(geojson_file, loc, z_val, years_measured):
     fig_map = go.Figure(
         go.Choroplethmapbox(
             geojson=geojson_file,
             locations=loc,
             z=z_val,
-            customdata=stations_info,
+            customdata=years_measured,
             colorscale="Bluered",
             zmin=0,
             zmax=12,
@@ -100,17 +95,17 @@ time_main_dropdown = dcc.Dropdown(
         {'label': 'Post-Monsoon', 'value': 'post'},
     ], value='pre'
 )
-main_map_slider = dcc.Slider(
-    id='slider-main-map',
-    max=NO_OF_YEARS,
-    min=0,
-    value=0,
-    marks={
-        str(i): str(int(list(df_gw_pre_post.columns)[4].split('-')[0]) + i)
-        for i in range(0, NO_OF_YEARS)
-    },
-    step=None
-)
+# main_map_slider = dcc.Slider(
+#     id='slider-main-map',
+#     max=NO_OF_YEARS,
+#     min=0,
+#     value=0,
+#     marks={
+#         str(i): str(int(list(df_gw_pre_post.columns)[4].split('-')[0]) + i)
+#         for i in range(0, NO_OF_YEARS)
+#     },
+#     step=None
+# )
 navbar = dbc.NavbarSimple(
     children=[
         dbc.NavItem(
@@ -159,7 +154,6 @@ main_map_card = dbc.Card(
                 dcc.Graph(id='main-map')
             ]
         ),
-        dbc.CardFooter(main_map_slider)
     ]
 )
 
@@ -252,7 +246,7 @@ def update_stats_callback(hover_data):
                 html.H4(val['location'], className='card-title'),
                 html.P('Location', className='card-text'),
             ]), ([
-                dcc.Graph(id='no-stations-graph', figure=no_stations_plot(val['customdata'])),
+                dcc.Graph(id='years-measured-graph', figure=years_measured_plot(val['customdata'])),
             ])
         )
     else:
@@ -264,7 +258,7 @@ def update_stats_callback(hover_data):
                 html.H4('stat', className='card-title'),
                 html.P('text', className='card-text'),
             ]), ([
-                dcc.Graph(id='no-stations-graph', figure=no_stations_plot('1/1')),
+                dcc.Graph(id='years-measured-graph', figure=years_measured_plot(NO_OF_YEARS)),
             ])
         )
 
@@ -272,29 +266,28 @@ def update_stats_callback(hover_data):
 @app.callback(
     Output(component_id='main-map', component_property='figure'),
     [Input('resolution-main-map', 'value'),
-     Input('slider-main-map', 'value'),
      Input('time-main-map', 'value'),
      Input('search-bar', 'value')]
 )
 # todo: insert progress bar to update from state to district
-def update_main_map(resolution_level, slider_value, time_value, location):
+def update_main_map(resolution_level, time_value, location):
     # print('start', resolution_level, slider_value, time_value)
     # print(0, location)
-    year = str(int(slider_value) + 1994)
-    col_reqd = year + '-' + str(time_value)
+    col_reqd = list(map(lambda year: year + '-' + time_value, YEARS))
+    col_reqd = {**{i: ['mean'] for i in col_reqd}, **{'total-stations': ['sum']}}
+
     if not location:
         # print(1, location)
-        geojson_file, loc, z_val, stations_info = update_main_map_metrics(resolution_level, col_reqd, time_value)
-        return main_map(geojson_file, loc, z_val, stations_info)
+        geojson_file, loc, z_val, years_measured = update_main_map_metrics(resolution_level, df_gw_pre_post, col_reqd)
+        return main_map(geojson_file, loc, z_val, years_measured)
     else:
         if location in locations:
-            geojson_file, loc, z_val, stations_info = update_main_map_metrics_location(col_reqd,
-                                                                                       time_value,
+            geojson_file, loc, z_val, years_measured = update_main_map_metrics_location(df_gw_pre_post,
+                                                                                       col_reqd,
                                                                                        location)
-            # todo handle error when a region is not present for that year
             # todo disable dropdown on location search
             # todo update metrics too on search
-            return main_map(geojson_file, loc, z_val, stations_info)
+            return main_map(geojson_file, loc, z_val, years_measured)
         else:
             # print(2, location)
             raise PreventUpdate
@@ -344,16 +337,14 @@ def update_trend_callback(resolution, click_data, time):
 
 
 # todo fix app.yaml with threads and processes
-############################################# Utility funcions ######################################################
-def update_main_map_metrics(resolution_level, col_reqd, time_value):
-    df_gw = df_gw_pre_post.groupby(resolution_level).agg(
-        {col_reqd: ['mean'], year + '-stations': ['sum'], 'total-stations': ['sum']}).round(2)
+############################################# Utility functions ######################################################
+def update_main_map_metrics(resolution_level, df_gw_pre_post, clmns_reqd):
     # print(df_gw)
-    used_stations = list(map(int, df_gw.loc[:, (year + '-stations', 'sum')]))
-    total_stations = list(map(int, df_gw.loc[:, ('total-stations', 'sum')]))
-    stations_info = [str(used_stations[i]) + '/' + str(total_stations[i]) for i in range(len(used_stations))]
-    df_gw = df_gw.loc[:,
-            (year + '-' + str(time_value), 'mean')]
+    df_gw = df_gw_pre_post.groupby(resolution_level).agg(
+        clmns_reqd).round(2)
+    df_gw = df_gw.loc[:, (clmns_reqd, 'mean')]
+    years_measured=df_gw.notna().sum(axis=1)
+    df_gw = df_gw.mean(axis=1).round(2)
     z_val = df_gw.tolist()
     loc = df_gw.index.tolist()
     if resolution_level == 'india':
@@ -365,25 +356,22 @@ def update_main_map_metrics(resolution_level, col_reqd, time_value):
     else:
         geojson_file = blocks_geojson
     # print(type(fig_map))
-    return geojson_file, loc, z_val, stations_info
+    return geojson_file, loc, z_val, years_measured
 
 
-def update_main_map_metrics_location(col_reqd, time_value, location):
+def update_main_map_metrics_location(df_gw_pre_post, clmns_reqd, location):
     location = location.split(':')
     # print('up', location)
     res = location[1].lower().strip()
     location = location[0].strip()
     location = location.lower()
     # print(1, location, res)
-    df_gw = df_gw_pre_post.groupby(res).agg(
-        {col_reqd: ['mean'], year + '-stations': ['sum'], 'total-stations': ['sum']}).round(2)
     # print(df_gw)
-    used_stations = list(map(int, df_gw.loc[:, (year + '-stations', 'sum')]))
-    total_stations = list(map(int, df_gw.loc[:, ('total-stations', 'sum')]))
-    stations_info = [str(used_stations[i]) + '/' + str(total_stations[i]) for i in
-                     range(len(used_stations))]
-    df_gw = df_gw.loc[location,
-                      (year + '-' + str(time_value), 'mean')]
+    df_gw = df_gw_pre_post.groupby(res).agg(
+        clmns_reqd).round(2)
+    df_gw = df_gw.loc[location, (clmns_reqd, 'mean')]
+    years_measured=[df_gw.notna().sum()]
+    df_gw=df_gw.mean().round(2)
     z_val = [df_gw]
     loc = [location]
     if res == 'india':
@@ -395,4 +383,4 @@ def update_main_map_metrics_location(col_reqd, time_value, location):
     else:
         geojson_file = blocks_geojson
     # print(type(fig_map))
-    return geojson_file, loc, z_val, stations_info
+    return geojson_file, loc, z_val, years_measured
