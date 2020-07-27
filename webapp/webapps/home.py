@@ -8,6 +8,7 @@ import gcsfs
 from webapp import app
 from data_global_var import df_gw_pre_post, india_geojson, states_geojson, districts_geojson, blocks_geojson, \
     NO_OF_YEARS, YEARS, YEARS_PRE, YEARS_POST, YEARS_STATIONS, locations
+from dash.exceptions import PreventUpdate
 
 
 # import os, sys
@@ -34,7 +35,7 @@ def stations_bar_graph(stations_per):
 
 
 def no_stations_plot(value):
-    print(value)
+    # print(value)
     used = value.split('/')
     total = int(used[1])
     used = int(used[0])
@@ -130,7 +131,7 @@ def get_search_datalist_option(locs):
     options = []
     for loc in locs:
         options.append(html.Option(value=loc))
-    print(options[:5])
+    # print(options[:5])
     return options
 
 
@@ -272,33 +273,32 @@ def update_stats_callback(hover_data):
     Output(component_id='main-map', component_property='figure'),
     [Input('resolution-main-map', 'value'),
      Input('slider-main-map', 'value'),
-     Input('time-main-map', 'value')]
+     Input('time-main-map', 'value'),
+     Input('search-bar', 'value')]
 )
 # todo: insert progress bar to update from state to district
-def update_main_map(resolution_level, slider_value, time_value):
+def update_main_map(resolution_level, slider_value, time_value, location):
     # print('start', resolution_level, slider_value, time_value)
+    # print(0, location)
     year = str(int(slider_value) + 1994)
     col_reqd = year + '-' + str(time_value)
-    df_gw = df_gw_pre_post.groupby(resolution_level).agg(
-        {col_reqd: ['mean'], year + '-stations': ['sum'], 'total-stations': ['sum']}).round(2)
-    # print(df_gw)
-    used_stations = list(map(int, df_gw.loc[:, (year + '-stations', 'sum')]))
-    total_stations = list(map(int, df_gw.loc[:, ('total-stations', 'sum')]))
-    stations_info = [str(used_stations[i]) + '/' + str(total_stations[i]) for i in range(len(used_stations))]
-    df_gw = df_gw.loc[:,
-            (year + '-' + str(time_value), 'mean')]
-    z_val = df_gw.tolist()
-    loc = df_gw.index.tolist()
-    if resolution_level == 'india':
-        geojson_file = india_geojson
-    elif resolution_level == 'state':
-        geojson_file = states_geojson
-    elif resolution_level == 'district':
-        geojson_file = districts_geojson
+    if not location:
+        # print(1, location)
+        geojson_file, loc, z_val, stations_info = update_main_map_metrics(resolution_level, col_reqd, time_value)
+        return main_map(geojson_file, loc, z_val, stations_info)
     else:
-        geojson_file = blocks_geojson
-    # print(type(fig_map))
-    return main_map(geojson_file, loc, z_val, stations_info)
+        if location in locations:
+            geojson_file, loc, z_val, stations_info = update_main_map_metrics_location(col_reqd,
+                                                                                       time_value,
+                                                                                       location)
+            # todo handle error when a region is not present for that year
+            # todo disable dropdown on location search
+            # todo update metrics too on search
+            return main_map(geojson_file, loc, z_val, stations_info)
+        else:
+            # print(2, location)
+            raise PreventUpdate
+
 
 @app.callback(
     [Output('trend-graph', 'figure'),
@@ -342,4 +342,57 @@ def update_trend_callback(resolution, click_data, time):
     fig_stations = stations_bar_graph(stations_per)
     return fig, fig_stations
 
+
 # todo fix app.yaml with threads and processes
+############################################# Utility funcions ######################################################
+def update_main_map_metrics(resolution_level, col_reqd, time_value):
+    df_gw = df_gw_pre_post.groupby(resolution_level).agg(
+        {col_reqd: ['mean'], year + '-stations': ['sum'], 'total-stations': ['sum']}).round(2)
+    # print(df_gw)
+    used_stations = list(map(int, df_gw.loc[:, (year + '-stations', 'sum')]))
+    total_stations = list(map(int, df_gw.loc[:, ('total-stations', 'sum')]))
+    stations_info = [str(used_stations[i]) + '/' + str(total_stations[i]) for i in range(len(used_stations))]
+    df_gw = df_gw.loc[:,
+            (year + '-' + str(time_value), 'mean')]
+    z_val = df_gw.tolist()
+    loc = df_gw.index.tolist()
+    if resolution_level == 'india':
+        geojson_file = india_geojson
+    elif resolution_level == 'state':
+        geojson_file = states_geojson
+    elif resolution_level == 'district':
+        geojson_file = districts_geojson
+    else:
+        geojson_file = blocks_geojson
+    # print(type(fig_map))
+    return geojson_file, loc, z_val, stations_info
+
+
+def update_main_map_metrics_location(col_reqd, time_value, location):
+    location = location.split(':')
+    # print('up', location)
+    res = location[1].lower().strip()
+    location = location[0].strip()
+    location = location.lower()
+    # print(1, location, res)
+    df_gw = df_gw_pre_post.groupby(res).agg(
+        {col_reqd: ['mean'], year + '-stations': ['sum'], 'total-stations': ['sum']}).round(2)
+    # print(df_gw)
+    used_stations = list(map(int, df_gw.loc[:, (year + '-stations', 'sum')]))
+    total_stations = list(map(int, df_gw.loc[:, ('total-stations', 'sum')]))
+    stations_info = [str(used_stations[i]) + '/' + str(total_stations[i]) for i in
+                     range(len(used_stations))]
+    df_gw = df_gw.loc[location,
+                      (year + '-' + str(time_value), 'mean')]
+    z_val = [df_gw]
+    loc = [location]
+    if res == 'india':
+        geojson_file = india_geojson
+    elif res == 'state':
+        geojson_file = states_geojson
+    elif res == 'district':
+        geojson_file = districts_geojson
+    else:
+        geojson_file = blocks_geojson
+    # print(type(fig_map))
+    return geojson_file, loc, z_val, stations_info
