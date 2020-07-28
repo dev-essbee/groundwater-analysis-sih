@@ -49,7 +49,11 @@ def years_measured_plot(value):
     return fig
 
 
-def main_map(geojson_file, loc, z_val, years_measured):
+def main_map(geojson_file, loc, z_val, years_measured,miniature):
+    if miniature:
+        map_style='white-bg'
+    else:
+        map_style='carto-positron'
     fig_map = go.Figure(
         go.Choroplethmapbox(
             geojson=geojson_file,
@@ -64,8 +68,9 @@ def main_map(geojson_file, loc, z_val, years_measured):
             colorbar=dict(thickness=15, ticklen=3),
         )
     )
+    # fig.update_geos(fitbounds="locations", visible=False)
     fig_map.update_layout(
-        mapbox_style="carto-positron",
+        mapbox_style=map_style,
         mapbox_zoom=3.25,
         mapbox_center={"lat": 22.775, "lon": 75.8577},
     )
@@ -94,31 +99,6 @@ time_main_dropdown = dcc.Dropdown(
         {'label': 'Pre-Monsoon', 'value': 'pre'},
         {'label': 'Post-Monsoon', 'value': 'post'},
     ], value='pre'
-)
-# main_map_slider = dcc.Slider(
-#     id='slider-main-map',
-#     max=NO_OF_YEARS,
-#     min=0,
-#     value=0,
-#     marks={
-#         str(i): str(int(list(df_gw_pre_post.columns)[4].split('-')[0]) + i)
-#         for i in range(0, NO_OF_YEARS)
-#     },
-#     step=None
-# )
-navbar = dbc.NavbarSimple(
-    children=[
-        dbc.NavItem(
-            dbc.NavLink('Time Series Analysis', href="/time-series")
-        ),
-        dbc.NavItem(
-            dbc.NavLink('Something', href="#")
-        )
-    ],
-    brand='Webapp name',
-    brand_href='#',
-    color='primary',
-    dark=True,
 )
 
 
@@ -187,7 +167,6 @@ def main_details_card(type_v):
 #######################################################################################################################
 layout = html.Div(
     children=[
-        dbc.Row(dbc.Col(navbar)),
         dbc.Row(
             [
                 dbc.Col(
@@ -279,7 +258,7 @@ def update_main_map(resolution_level, time_value, location):
     if not location:
         # print(1, location)
         geojson_file, loc, z_val, years_measured = update_main_map_metrics(resolution_level, df_gw_pre_post, col_reqd)
-        return main_map(geojson_file, loc, z_val, years_measured)
+        return main_map(geojson_file, loc, z_val, years_measured,False)
     else:
         if location in locations:
             geojson_file, loc, z_val, years_measured = update_main_map_metrics_location(df_gw_pre_post,
@@ -287,7 +266,7 @@ def update_main_map(resolution_level, time_value, location):
                                                                                        location)
             # todo disable dropdown on location search
             # todo update metrics too on search
-            return main_map(geojson_file, loc, z_val, years_measured)
+            return main_map(geojson_file, loc, z_val, years_measured,False)
         else:
             # print(2, location)
             raise PreventUpdate
