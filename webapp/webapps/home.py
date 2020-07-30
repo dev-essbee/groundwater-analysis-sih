@@ -96,9 +96,9 @@ resolution_main_dropdown = dcc.Dropdown(
 time_main_dropdown = dcc.Dropdown(
     id='time-main-map',
     options=[
-        {'label': 'Pre-Monsoon', 'value': 'pre'},
-        {'label': 'Post-Monsoon', 'value': 'post'},
-    ], value='pre'
+        {'label': 'Pre-Monsoon', 'value': 'pem'},
+        {'label': 'Post-Monsoon', 'value': 'pom'},
+    ], value='pem'
 )
 
 

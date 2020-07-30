@@ -34,13 +34,13 @@ with open(data + r'geojson/block_id.json', 'r') as f:
 # important constants
 NO_OF_YEARS = (len(list(df_gw_pre_post.columns)) - 4) // 3
 YEARS = [str(i + 1994) for i in range(NO_OF_YEARS)]
-YEARS_PRE = list(map(lambda year: year + "-pre", YEARS))
-YEARS_POST = list(map(lambda year: year + "-post", YEARS))
+YEARS_PRE = list(map(lambda year: year + "-pem", YEARS))
+YEARS_POST = list(map(lambda year: year + "-pom", YEARS))
 YEARS_STATIONS = list(map(lambda year: year + "-stations", YEARS))
 YEARS_STATIONS.append("total-stations")
 locations = ['india : India']
 locations_s = list(map(lambda x: x + ' : State', list(set(list(df_gw_pre_post['state'])))))
-locations_d=list(map(lambda x: x + ' : District', list(set(list(df_gw_pre_post['district'])))))
+locations_d = list(map(lambda x: x + ' : District', list(set(list(df_gw_pre_post['district'])))))
 locations_b = list(map(lambda x: x + ' : Block', list(set(list(df_gw_pre_post['block'])))))
 locations.extend(locations_s)
 locations.extend(locations_d)
