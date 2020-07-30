@@ -23,13 +23,13 @@ data = r"../data/"
 #     with fs.open(bucket + r'gadm36_IND_3_id.json') as f:
 #         blocks_geojson = json.load(f)
 df_gw_pre_post = pd.read_parquet(data + r'comp/gw-block-pre-post.parquet.gzip')
-with open(data + r'geojson/gadm36_IND_0_id.json', 'r') as f:
+with open(data + r'geojson/india_id.json', 'r') as f:
     india_geojson = json.load(f)
-with open(data + r'geojson/gadm36_IND_1_id.json', 'r') as f:
+with open(data + r'geojson/state_id.json', 'r') as f:
     states_geojson = json.load(f)
-with open(data + r'geojson/gadm36_IND_2_id.json', 'r') as f:
+with open(data + r'geojson/district_id.json', 'r') as f:
     districts_geojson = json.load(f)
-with open(data + r'geojson/gadm36_IND_3_id.json', 'r') as f:
+with open(data + r'geojson/block_id.json', 'r') as f:
     blocks_geojson = json.load(f)
 # important constants
 NO_OF_YEARS = (len(list(df_gw_pre_post.columns)) - 4) // 3

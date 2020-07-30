@@ -3,7 +3,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 from webapp import app
-from webapps import home, time_series
+from webapps import home, time_series,visualise_on_map
 
 navbar = dbc.NavbarSimple(
     children=[
@@ -37,6 +37,8 @@ def display_page(pathname):
         return home.layout
     elif pathname == '/time-series':
         return time_series.layout
+    elif pathname=="/visualise":
+        return visualise_no_map.layout
     else:
         return '404'
 
