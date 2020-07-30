@@ -23,8 +23,17 @@ from dash.exceptions import PreventUpdate
 ############################################ visualizations ###########################################################
 #######################################################################################################################
 def trend_scatter_plot(df_gw):
-    fig = go.Figure(data=go.Scatter(x=YEARS, y=df_gw.values))
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=YEARS, y=df_gw.values,
+                             mode='lines+markers',
+                             line=dict(color='firebrick')))
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, transition_duration=500)
+
+    fig.update_xaxes(
+        rangeslider_visible=True,
+
+    )
+
     return fig
 
 
@@ -49,11 +58,11 @@ def years_measured_plot(value):
     return fig
 
 
-def main_map(geojson_file, loc, z_val, years_measured,miniature):
+def main_map(geojson_file, loc, z_val, years_measured, miniature):
     if miniature:
-        map_style='white-bg'
+        map_style = 'white-bg'
     else:
-        map_style='carto-positron'
+        map_style = 'carto-positron'
     fig_map = go.Figure(
         go.Choroplethmapbox(
             geojson=geojson_file,
@@ -253,20 +262,20 @@ def update_main_map(resolution_level, time_value, location):
     # print('start', resolution_level, slider_value, time_value)
     # print(0, location)
     col_reqd = list(map(lambda year: year + '-' + time_value, YEARS))
-    col_reqd = {**{i: ['mean'] for i in col_reqd}, **{'total-stations': ['sum']}}
+    col_reqd = {**{i: ['mean'] for i in col_reqd}, **{'total-st': ['sum']}}
 
     if not location:
         # print(1, location)
         geojson_file, loc, z_val, years_measured = update_main_map_metrics(resolution_level, df_gw_pre_post, col_reqd)
-        return main_map(geojson_file, loc, z_val, years_measured,False)
+        return main_map(geojson_file, loc, z_val, years_measured, False)
     else:
         if location in locations:
             geojson_file, loc, z_val, years_measured = update_main_map_metrics_location(df_gw_pre_post,
-                                                                                       col_reqd,
-                                                                                       location)
+                                                                                        col_reqd,
+                                                                                        location)
             # todo disable dropdown on location search
             # todo update metrics too on search
-            return main_map(geojson_file, loc, z_val, years_measured,False)
+            return main_map(geojson_file, loc, z_val, years_measured, False)
         else:
             # print(2, location)
             raise PreventUpdate
@@ -322,7 +331,7 @@ def update_main_map_metrics(resolution_level, df_gw_pre_post, clmns_reqd):
     df_gw = df_gw_pre_post.groupby(resolution_level).agg(
         clmns_reqd).round(2)
     df_gw = df_gw.loc[:, (clmns_reqd, 'mean')]
-    years_measured=df_gw.notna().sum(axis=1)
+    years_measured = df_gw.notna().sum(axis=1)
     df_gw = df_gw.mean(axis=1).round(2)
     z_val = df_gw.tolist()
     loc = df_gw.index.tolist()
@@ -349,8 +358,8 @@ def update_main_map_metrics_location(df_gw_pre_post, clmns_reqd, location):
     df_gw = df_gw_pre_post.groupby(res).agg(
         clmns_reqd).round(2)
     df_gw = df_gw.loc[location, (clmns_reqd, 'mean')]
-    years_measured=[df_gw.notna().sum()]
-    df_gw=df_gw.mean().round(2)
+    years_measured = [df_gw.notna().sum()]
+    df_gw = df_gw.mean().round(2)
     z_val = [df_gw]
     loc = [location]
     if res == 'india':

@@ -23,6 +23,8 @@ data = r"../data/"
 #     with fs.open(bucket + r'gadm36_IND_3_id.json') as f:
 #         blocks_geojson = json.load(f)
 df_gw_pre_post = pd.read_parquet(data + r'comp/gw-block-pre-post.parquet.gzip')
+categories = pd.read_parquet(data + r'categories.parquet.gzip')
+
 with open(data + r'geojson/india_id.json', 'r') as f:
     india_geojson = json.load(f)
 with open(data + r'geojson/state_id.json', 'r') as f:
@@ -31,13 +33,14 @@ with open(data + r'geojson/district_id.json', 'r') as f:
     districts_geojson = json.load(f)
 with open(data + r'geojson/block_id.json', 'r') as f:
     blocks_geojson = json.load(f)
+
 # important constants
 NO_OF_YEARS = (len(list(df_gw_pre_post.columns)) - 4) // 3
 YEARS = [str(i + 1994) for i in range(NO_OF_YEARS)]
 YEARS_PRE = list(map(lambda year: year + "-pem", YEARS))
 YEARS_POST = list(map(lambda year: year + "-pom", YEARS))
-YEARS_STATIONS = list(map(lambda year: year + "-stations", YEARS))
-YEARS_STATIONS.append("total-stations")
+YEARS_STATIONS = list(map(lambda year: year + "-st", YEARS))
+YEARS_STATIONS.append("total-st")
 locations = ['india : India']
 locations_s = list(map(lambda x: x + ' : State', list(set(list(df_gw_pre_post['state'])))))
 locations_d = list(map(lambda x: x + ' : District', list(set(list(df_gw_pre_post['district'])))))

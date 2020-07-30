@@ -18,7 +18,7 @@ from dash.exceptions import PreventUpdate
 ######################################### primary components ##########################################################
 def min_location_graph(location, time_value):
     col_reqd = list(map(lambda year: year + '-' + time_value, YEARS))
-    col_reqd = {**{i: ['mean'] for i in col_reqd}, **{'total-stations': ['sum']}}
+    col_reqd = {**{i: ['mean'] for i in col_reqd}, **{'total-st': ['sum']}}
     geojson_file, loc, z_val, years_measured = update_main_map_metrics_location(df_gw_pre_post, col_reqd, location)
     return main_map(geojson_file, loc, z_val, years_measured, True)
 
