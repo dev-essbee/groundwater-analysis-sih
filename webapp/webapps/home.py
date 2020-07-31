@@ -7,7 +7,7 @@ from dash.dependencies import Input, Output
 import gcsfs
 from webapp import app
 from data_global_var import df_gw_pre_post, india_geojson, states_geojson, districts_geojson, blocks_geojson, \
-    NO_OF_YEARS, YEARS, YEARS_PRE, YEARS_POST, YEARS_STATIONS, locations
+    NO_OF_YEARS, YEARS, YEARS_PRE, YEARS_POST, locations
 from dash.exceptions import PreventUpdate
 
 
@@ -272,7 +272,7 @@ def update_main_map(resolution_level, time_value, location):
     # print('start', resolution_level, slider_value, time_value)
     # print(0, location)
     col_reqd = list(map(lambda year: year + '-' + time_value, YEARS))
-    col_reqd = {**{i: ['mean'] for i in col_reqd}, **{'total-st': ['sum']}}
+    col_reqd = {**{i: ['mean'] for i in col_reqd}}
 
     if not location:
         # print(1, location)
@@ -350,7 +350,6 @@ def update_graphs(resolution, click_data, time):
         df_gw_pre_post.iloc[list(df_gw_pre_post[df_gw_pre_post[resolution] == click_data_final].index)].agg(
             {
                 **{i: ["mean"] for i in temp_years},
-                **{i: ["sum"] for i in YEARS_STATIONS},
             }
         ).round(2)
     )

@@ -39,8 +39,8 @@ NO_OF_YEARS = (len(list(df_gw_pre_post.columns)) - 4) // 3
 YEARS = [str(i + 1994) for i in range(NO_OF_YEARS)]
 YEARS_PRE = list(map(lambda year: year + "-pem", YEARS))
 YEARS_POST = list(map(lambda year: year + "-pom", YEARS))
-YEARS_STATIONS = list(map(lambda year: year + "-st", YEARS))
-YEARS_STATIONS.append("total-st")
+# YEARS_STATIONS = list(map(lambda year: year + "-st", YEARS))
+# YEARS_STATIONS.append("total-st")
 locations = ['india : India']
 locations_s = list(map(lambda x: x + ' : State', list(set(list(df_gw_pre_post['state'])))))
 locations_d = list(map(lambda x: x + ' : District', list(set(list(df_gw_pre_post['district'])))))

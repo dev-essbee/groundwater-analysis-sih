@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from dash.dependencies import Input, Output
 from webapp import app
 from data_global_var import df_gw_pre_post, india_geojson, states_geojson, districts_geojson, blocks_geojson, \
-    NO_OF_YEARS, YEARS, YEARS_PRE, YEARS_POST, YEARS_STATIONS,locations
+    NO_OF_YEARS, YEARS, YEARS_PRE, YEARS_POST,locations
 from webapps.home import search_bar, main_map, update_main_map_metrics_location
 from dash.exceptions import PreventUpdate
 
