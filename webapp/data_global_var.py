@@ -23,7 +23,7 @@ data = r"../data/"
 #     with fs.open(bucket + r'gadm36_IND_3_id.json') as f:
 #         blocks_geojson = json.load(f)
 df_gw_pre_post = pd.read_parquet(data + r'comp/gw-block-pre-post.parquet.gzip')
-categories = pd.read_parquet(data + r'categories.parquet.gzip')
+categories = pd.read_parquet(data + r'comp/categories.parquet.gzip')
 
 with open(data + r'geojson/india_id.json', 'r') as f:
     india_geojson = json.load(f)

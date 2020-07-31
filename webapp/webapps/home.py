@@ -37,10 +37,17 @@ def trend_scatter_plot(df_gw):
     return fig
 
 
-def stations_bar_graph(stations_per):
-    fig_stations = go.Figure([go.Bar(x=YEARS, y=stations_per)])
-    fig_stations.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, transition_duration=500)
-    return fig_stations
+def locations_sunburst(labels, parents, values):
+    fig = go.Figure()
+    fig.add_trace(go.Sunburst(labels=labels, parents=parents))
+    fig.update_layout(margin=dict(t=0, l=0, r=0, b=0), width=800, height=800)
+    return fig
+
+
+# def stations_bar_graph(stations_per):
+#     fig_stations = go.Figure([go.Bar(x=YEARS, y=stations_per)])
+#     fig_stations.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, transition_duration=500)
+#     return fig_stations
 
 
 def years_measured_plot(value):
@@ -157,8 +164,13 @@ trend_graph_card = dbc.Card(
 
 trend_stations_card = dbc.Card(
     [
-        html.H4("Stations Measured", className="card-title"),
-        dcc.Graph(id='trend-stations-graph')
+        # html.H4("Stations Measured", className="card-title"),
+        # dcc.Graph(id='trend-stations-graph')
+    ]
+)
+locations_sunburst_card = dbc.Card(
+    [
+        dcc.Graph(id='locations-sunburst')
     ]
 )
 
@@ -180,15 +192,13 @@ layout = html.Div(
             [
                 dbc.Col(
                     main_map_card,
-                    width={"size": 9},
+                    width={"size": 6},
                 ),
                 dbc.Col(
                     [
-                        main_details_card('region-card'),
-                        main_details_card('current-card'),
-                        main_details_card('no-stations-card'),
+                        locations_sunburst_card
 
-                    ], width={"size": 3}
+                    ], width={"size": 6}
                 )
             ]
         ),
@@ -199,7 +209,7 @@ layout = html.Div(
                     width={"size": 6},
                 ),
                 dbc.Col(
-                    trend_stations_card,
+                    # trend_stations_card,
                     width={'size': 6},
                 )
             ]
@@ -214,41 +224,41 @@ layout = html.Div(
 #######################################################################################################################
 
 ############################################### search bar callback ###################################################
-@app.callback(
-    [
-        Output(component_id='region-card', component_property='children'),
-        Output(component_id='current-card', component_property='children'),
-        Output(component_id='no-stations-card', component_property='children'),
-    ],
-    [Input('main-map', 'hoverData')]
-)
-def update_stats_callback(hover_data):
-    if hover_data:
-        val = hover_data['points'][0]
-        # print(hover_data)
-        return (
-            ([
-                html.H4(val['z'], className='card-title'),
-                html.P('Current Level', className='card-text'),
-            ]), ([
-                html.H4(val['location'], className='card-title'),
-                html.P('Location', className='card-text'),
-            ]), ([
-                dcc.Graph(id='years-measured-graph', figure=years_measured_plot(val['customdata'])),
-            ])
-        )
-    else:
-        return (
-            ([
-                html.H4('stat', className='card-title'),
-                html.P('text', className='card-text'),
-            ]), ([
-                html.H4('stat', className='card-title'),
-                html.P('text', className='card-text'),
-            ]), ([
-                dcc.Graph(id='years-measured-graph', figure=years_measured_plot(NO_OF_YEARS)),
-            ])
-        )
+# @app.callback(
+#     [
+#         Output(component_id='region-card', component_property='children'),
+#         Output(component_id='current-card', component_property='children'),
+#         Output(component_id='no-stations-card', component_property='children'),
+#     ],
+#     [Input('main-map', 'hoverData')]
+# )
+# def update_stats_callback(hover_data):
+#     if hover_data:
+#         val = hover_data['points'][0]
+#         # print(hover_data)
+#         return (
+#             ([
+#                 html.H4(val['z'], className='card-title'),
+#                 html.P('Current Level', className='card-text'),
+#             ]), ([
+#                 html.H4(val['location'], className='card-title'),
+#                 html.P('Location', className='card-text'),
+#             ]), ([
+#                 dcc.Graph(id='years-measured-graph', figure=years_measured_plot(val['customdata'])),
+#             ])
+#         )
+#     else:
+#         return (
+#             ([
+#                 html.H4('stat', className='card-title'),
+#                 html.P('text', className='card-text'),
+#             ]), ([
+#                 html.H4('stat', className='card-title'),
+#                 html.P('text', className='card-text'),
+#             ]), ([
+#                 dcc.Graph(id='years-measured-graph', figure=years_measured_plot(NO_OF_YEARS)),
+#             ])
+#         )
 
 
 @app.callback(
@@ -283,29 +293,61 @@ def update_main_map(resolution_level, time_value, location):
 
 @app.callback(
     [Output('trend-graph', 'figure'),
-     Output('trend-stations-graph', 'figure')
+     # Output('trend-stations-graph', 'figure'),
+     Output('locations-sunburst', 'figure')
      ],
     [Input('resolution-main-map', 'value'),
      Input('main-map', 'clickData'),
      Input('time-main-map', 'value')]
 )
-def update_trend_callback(resolution, click_data, time):
-    hover_value = 'india'
+def update_graphs(resolution, click_data, time):
+    # trend, suburst
+    click_data_final = 'india'
+    t = df_gw_pre_post.groupby(["india", "state"]).count().reset_index()
+    labels = (list(t.loc[:, "state"].values))
+    parents = (list(t.loc[:, "india"].values))
     if not click_data:
         if resolution == 'state':
-            hover_value = 'rajasthan'
+            click_data_final = 'rajasthan'
         elif resolution == 'district':
-            hover_value = 'jaipur'
+            click_data_final = 'jaipur'
         elif resolution == 'block':
-            hover_value = 'amber'
+            click_data_final = 'amber'
     else:
-        hover_value = click_data['points'][0]['location']
+        click_data_final = click_data['points'][0]['location']
+    if resolution == 'state':
+        t = (
+            df_gw_pre_post[df_gw_pre_post[resolution] == click_data_final]
+                .groupby(["state", "district"])
+                .count()
+                .reset_index()
+        )
+        labels.extend(t.loc[:, "district"].values)
+        parents.extend(t.loc[:, "state"].values)
+    if resolution == 'district':
+        t = (
+            df_gw_pre_post[df_gw_pre_post[resolution] == click_data_final]
+                .groupby(["state", "district"])
+                .count()
+                .reset_index()
+        )
+        labels.extend(t.loc[:, "district"].values)
+        parents.extend(t.loc[:, "state"].values)
+        t = (
+            df_gw_pre_post[df_gw_pre_post[resolution] == click_data_final]
+                .groupby(["india", "state", "district", "block"])
+                .count()
+                .reset_index()
+        )
+        labels.extend(list(t.loc[:, "block"].values))
+        parents.extend(list(t.loc[:, "district"].values))
+
     if time == 'pre':
         temp_years = YEARS_PRE
     else:
         temp_years = YEARS_POST
     df = (
-        df_gw_pre_post.iloc[list(df_gw_pre_post[df_gw_pre_post[resolution] == hover_value].index)].agg(
+        df_gw_pre_post.iloc[list(df_gw_pre_post[df_gw_pre_post[resolution] == click_data_final].index)].agg(
             {
                 **{i: ["mean"] for i in temp_years},
                 **{i: ["sum"] for i in YEARS_STATIONS},
@@ -317,11 +359,13 @@ def update_trend_callback(resolution, click_data, time):
 
     # print(hover_value)
     fig = trend_scatter_plot(df_gw)
-    df_stations = df.loc['sum', YEARS_STATIONS[:-1]]
-    stations_per = (df_stations / df.loc['sum', YEARS_STATIONS[-1]]) * 100
+    # df_stations = df.loc['sum', YEARS_STATIONS[:-1]]
+    # stations_per = (df_stations / df.loc['sum', YEARS_STATIONS[-1]]) * 100
     # print(stations_per)
-    fig_stations = stations_bar_graph(stations_per)
-    return fig, fig_stations
+    # fig_stations = stations_bar_graph(stations_per)
+    fig_sunburst = locations_sunburst(labels, parents, None)
+    # return fig, fig_stations, fig_sunburst
+    return fig, fig_sunburst
 
 
 # todo fix app.yaml with threads and processes
