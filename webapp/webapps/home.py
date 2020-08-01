@@ -114,6 +114,7 @@ time_main_dropdown = dcc.Dropdown(
     options=[
         {'label': 'Pre-Monsoon', 'value': 'pem'},
         {'label': 'Post-Monsoon', 'value': 'pom'},
+        {'label': 'Pre+Post-Monsoon', 'value': 'pem-pom'},
     ], value='pem'
 )
 

@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from dash.dependencies import Input, Output
 from webapp import app
 from data_global_var import df_gw_pre_post, india_geojson, states_geojson, districts_geojson, blocks_geojson, \
-    NO_OF_YEARS, YEARS, YEARS_PRE, YEARS_POST,locations
+    NO_OF_YEARS, YEARS, YEARS_PRE, YEARS_POST, locations, block_cat_geojson
 from webapps.home import search_bar, main_map, update_main_map_metrics_location
 from dash.exceptions import PreventUpdate
 
@@ -18,7 +18,7 @@ from dash.exceptions import PreventUpdate
 ######################################### primary components ##########################################################
 def min_location_graph(location, time_value):
     col_reqd = list(map(lambda year: year + '-' + time_value, YEARS))
-    col_reqd = {**{i: ['mean'] for i in col_reqd}, **{'total-st': ['sum']}}
+    col_reqd = {**{i: ['mean'] for i in col_reqd}}
     geojson_file, loc, z_val, years_measured = update_main_map_metrics_location(df_gw_pre_post, col_reqd, location)
     return main_map(geojson_file, loc, z_val, years_measured, True)
 
@@ -26,9 +26,9 @@ def min_location_graph(location, time_value):
 time_min_map_dropdown = dcc.Dropdown(
     id='time-min-map-dropdown',
     options=[
-        {'label': 'Pre-Monsoon', 'value': 'pre'},
-        {'label': 'Post-Monsoon', 'value': 'post'},
-    ], value='pre'
+        {'label': 'Pre-Monsoon', 'value': 'pem'},
+        {'label': 'Post-Monsoon', 'value': 'pom'},
+    ], value='pem'
 )
 
 ########################################## Secondary Components #######################################################

@@ -24,7 +24,7 @@ data = r"../data/"
 #         blocks_geojson = json.load(f)
 df_gw_pre_post = pd.read_parquet(data + r'comp/gw-block-pre-post.parquet.gzip')
 categories = pd.read_parquet(data + r'comp/categories.parquet.gzip')
-
+# print(categories.head())
 with open(data + r'geojson/india_id.json', 'r') as f:
     india_geojson = json.load(f)
 with open(data + r'geojson/state_id.json', 'r') as f:
@@ -33,6 +33,8 @@ with open(data + r'geojson/district_id.json', 'r') as f:
     districts_geojson = json.load(f)
 with open(data + r'geojson/block_id.json', 'r') as f:
     blocks_geojson = json.load(f)
+with open(data + r'compiled_cat_block_id.json', 'r') as f:
+    block_cat_geojson = json.load(f)
 
 # important constants
 NO_OF_YEARS = (len(list(df_gw_pre_post.columns)) - 4) // 3
